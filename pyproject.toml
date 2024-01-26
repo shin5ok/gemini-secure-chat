@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "gemini-secure-chat"
+version = "0.1.0"
+description = ""
+authors = ["shin5ok <shin5ok@55mp.com>"]
+readme = "README.md"
+packages = [{include = "gemini_secure_chat"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+chainlit = "^1.0.101"
+langchain = "^0.1.1"
+google-cloud-aiplatform = "^1.39.0"
+uvicorn = "0.25.0"
+langchain-community = "^0.0.13"
+langchain-core = "^0.1.13"
+langchain-google-vertexai = "^0.0.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
