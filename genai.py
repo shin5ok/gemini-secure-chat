@@ -13,7 +13,7 @@ llm :dict[str, ChatVertexAI|None] = {
 memory = ConversationBufferMemory()
 _debug: bool = 'DEBUG' in os.environ
 
-def _init():
+def _init(params: dict = {}):
     default_params: dict = {
         "model_name": "",
         "temperature": 0.6,
@@ -21,8 +21,8 @@ def _init():
         "top_p": 0.8,
         "top_k": 40,
         }
-    p = default_params
-    return p
+    params.update(default_params)
+    return params
     
 def get_llm(kind: str = 'gemini-pro') -> ChatVertexAI:
     global llm, memory
