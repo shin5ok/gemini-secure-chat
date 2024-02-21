@@ -3,22 +3,20 @@ import genai
 
 from langchain_google_vertexai import ChatVertexAI
 from langchain_core.messages import HumanMessage
+from langchain.memory import ConversationBufferMemory
 
-llm: ChatVertexAI = None
-llm = ChatVertexAI(
-    model_name='gemini-pro-vision',
-    max_output_tokens=2048,
-    temperature=0.4,
-    top_p=1,
-    top_k=32,
+from langchain.chains import ConversationChain
+
+memory = ConversationBufferMemory(
+    human_prefix="User", ai_prefix="Bot",
+    memory_key="memory", return_messages=True,
 )
-
 
 @cl.on_chat_start
 async def _start():
     cl.user_session.set(
         "message_history",
-        [{"role": "system", "content": "You are a helpful assistant."}],
+        [{"role": "system", "content": "なんでもきいてね"}],
     )
 
     msg = cl.Message(
@@ -29,7 +27,10 @@ async def _start():
 
 @cl.on_message
 async def main(message: cl.Message):
-    print("history:",cl.user_session.get("message_history"))
+    history = cl.user_session.get("message_history")
+    history.append({"role": "user", "content": message.content})
+
+    kind: str = "gemini-pro"
 
     contents=[
         {
@@ -37,10 +38,12 @@ async def main(message: cl.Message):
             'text': message.content,
         },
     ]
+
     import base64
-    images = [file for file in message.elements if "image" in file.mime]
-    if len(images) > 0:
-        with open(images[0].path, "rb") as f:
+    image_files = [file for file in message.elements if "image" in file.mime]
+    if len(image_files) > 0:
+        kind = "gemini-pro-vision"
+        with open(image_files[0].path, "rb") as f:
             encoded_data = base64.b64encode(f.read())
         image_content = {
             'type': 'image_url',
@@ -48,12 +51,20 @@ async def main(message: cl.Message):
                 "url": f"data:image/jpeg;base64,{encoded_data.decode('utf-8')}",
             }
         }
-        # r_message['content'].append(image_content)
         contents.append(image_content)
 
     r_message = HumanMessage(content=contents)
 
-    genned_message= llm.invoke([r_message])
+    llm = genai.get_llm(kind)
+
+    genned_message = llm.invoke([r_message])
+
+
+    cl.user_session.set(
+        "message_history",
+        memory.load_memory_variables({})['memory'],
+    )
+
     await cl.Message(
         content=genned_message.content,
     ).send()

@@ -24,21 +24,22 @@ def _init():
     p = default_params
     return p
     
-def get_llm(kind: str = 'gemini-pro') -> ConversationChain:
+def get_llm(kind: str = 'gemini-pro') -> ChatVertexAI:
     global llm, memory
-    if kind in llm:
+    if kind in llm and llm[kind] is None:
         p = _init()
         p["model_name"] = kind
         llm[kind] = ChatVertexAI(**p)
         print(f"Generated LLM:{kind}")
+    return llm[kind]
 
-    chat_model = ConversationChain(
+    chat_chain = ConversationChain(
         llm=llm[kind],
         verbose=True,
         memory=memory,
     )
     
-    return chat_model
+    return chat_chain
 
 def run(text_string: str) -> str:
     response = get_llm().predict(input=text_string)
