@@ -1,6 +1,13 @@
 import chainlit as cl
 import genai
 
+from langchain.globals import set_debug, set_verbose
+
+set_verbose(True)
+set_debug(True)
+
+from langchain.schema import messages_from_dict, messages_to_dict
+
 from langchain_google_vertexai import ChatVertexAI
 from langchain_core.messages import HumanMessage
 from langchain.memory import ConversationBufferMemory
@@ -9,18 +16,21 @@ from langchain.chains import ConversationChain
 
 memory = ConversationBufferMemory(
     human_prefix="User", ai_prefix="Bot",
-    memory_key="memory", return_messages=True,
+    memory_key="history",
+    verbose=True,
+    return_messages=True,
 )
 
 @cl.on_chat_start
 async def _start():
+    message: str = "なんでもきいてね！でも記憶力はないですよ"
     cl.user_session.set(
         "message_history",
-        [{"role": "system", "content": "なんでもきいてね"}],
+        [{"role": "system", "content": message}],
     )
 
     msg = cl.Message(
-        content="Welcome to the Gemini chat!",
+        content=message,
     )
     await msg.send()
 
@@ -28,7 +38,7 @@ async def _start():
 @cl.on_message
 async def main(message: cl.Message):
     history = cl.user_session.get("message_history")
-    history.append({"role": "user", "content": message.content})
+    # history.append({"role": "user", "content": message.content})
 
     kind: str = "gemini-pro"
 
@@ -57,12 +67,22 @@ async def main(message: cl.Message):
 
     llm = genai.get_llm(kind)
 
-    genned_message = llm.invoke([r_message])
+    buffer = memory.load_memory_variables({})
+    pre = messages_to_dict(buffer['history'])
+    memory_data = memory.load_memory_variables({})['history']
+    print(memory_data)
+    genned_message = llm.invoke([
+        r_message,
+    ])
 
+    memory.chat_memory.add_user_message(r_message)
+    memory.chat_memory.add_ai_message(genned_message.content)
+
+    print(memory_data)
 
     cl.user_session.set(
         "message_history",
-        memory.load_memory_variables({})['memory'],
+        memory.load_memory_variables({})['history'],
     )
 
     await cl.Message(

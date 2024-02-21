@@ -33,14 +33,6 @@ def get_llm(kind: str = 'gemini-pro') -> ChatVertexAI:
         print(f"Generated LLM:{kind}")
     return llm[kind]
 
-    chat_chain = ConversationChain(
-        llm=llm[kind],
-        verbose=True,
-        memory=memory,
-    )
-    
-    return chat_chain
-
 def run(text_string: str) -> str:
     response = get_llm().predict(input=text_string)
     return response
